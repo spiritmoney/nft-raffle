@@ -6,14 +6,15 @@ import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/KeeperCompatibleInterface.sol";
 import "hardhat/console.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
 
 error Raffle__UpkeepNotNeeded(uint256 currentBalance, uint256 numPlayers, uint256 raffleState);
 error Raffle__TransferFailed();
 error Raffle__SendMoreToEnterRaffle();
 error Raffle__RaffleNotOpen();
 
-/**@title A sample Raffle Contract
- * @author Patrick Collins
+/**
  * @notice This contract is for creating a sample raffle contract
  * @dev This implements the Chainlink VRF Version 2
  */
@@ -33,10 +34,10 @@ contract Raffle is VRFConsumerBaseV2, KeeperCompatibleInterface {
     uint32 private constant NUM_WORDS = 1;
 
     // Lottery Variables
-    uint256 private immutable i_interval;
+    uint256 private i_interval;
     uint256 private s_lastTimeStamp;
     address private s_recentWinner;
-    uint256 private immutable i_entranceFee;
+    uint256 private i_entranceFee;
     address payable[] private s_players;
     RaffleState private s_raffleState;
 
@@ -45,6 +46,13 @@ contract Raffle is VRFConsumerBaseV2, KeeperCompatibleInterface {
     event RaffleEnter(address indexed player);
     event WinnerPicked(address indexed player);
 
+    // NFT Variables
+    IERC721Enumerable public nftReward;
+    uint256 public nftTokenId;
+    address private owner;
+    address private nftRewardAddress;
+    uint256[] public nftTokenIds;
+
     /* Functions */
     constructor(
         address vrfCoordinatorV2,
@@ -52,7 +60,8 @@ contract Raffle is VRFConsumerBaseV2, KeeperCompatibleInterface {
         bytes32 gasLane, // keyHash
         uint256 interval,
         uint256 entranceFee,
-        uint32 callbackGasLimit
+        uint32 callbackGasLimit,
+        address _nftRewardAddress
     ) VRFConsumerBaseV2(vrfCoordinatorV2) {
         i_vrfCoordinator = VRFCoordinatorV2Interface(vrfCoordinatorV2);
         i_gasLane = gasLane;
@@ -62,6 +71,48 @@ contract Raffle is VRFConsumerBaseV2, KeeperCompatibleInterface {
         s_raffleState = RaffleState.OPEN;
         s_lastTimeStamp = block.timestamp;
         i_callbackGasLimit = callbackGasLimit;
+        nftRewardAddress = _nftRewardAddress;
+        nftReward = IERC721Enumerable(nftRewardAddress);
+        owner = msg.sender;
+    }
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Caller is not the owner");
+        _;
+    }
+
+    /**
+     * @notice Allows the contract owner to change the entrance fee.
+     * @param newEntranceFee The new entrance fee in wei.
+     */
+    function setEntranceFee(uint256 newEntranceFee) public onlyOwner {
+        i_entranceFee = newEntranceFee;
+    }
+
+    /**
+     * @notice Allows the contract owner to change the interval.
+     * @param newInterval The new interval in seconds.
+     */
+    function setInterval(uint256 newInterval) public onlyOwner {
+        i_interval = newInterval;
+    }
+
+    /**
+     * @notice Allows the contract owner to set the NFT reward token IDs.
+     * @param tokenIds The array of NFT token IDs.
+     */
+    function setNftTokenIds(uint256[] calldata tokenIds) public onlyOwner {
+        require(tokenIds.length <= 5, "Cannot set more than 5 NFTs");
+        nftTokenIds = tokenIds;
+    }
+
+    /**
+     * @notice Allows the contract owner to change the NFT reward address.
+     * @param newNftRewardAddress The new NFT reward contract address.
+     */
+    function setNftRewardAddress(address newNftRewardAddress) public onlyOwner {
+        nftRewardAddress = newNftRewardAddress;
+        nftReward = IERC721Enumerable(newNftRewardAddress);
     }
 
     function enterRaffle() public payable {
@@ -160,6 +211,14 @@ contract Raffle is VRFConsumerBaseV2, KeeperCompatibleInterface {
         if (!success) {
             revert Raffle__TransferFailed();
         }
+
+         // Select a random NFT from the provided list
+        uint256 nftIndex = randomWords[0] % nftTokenIds.length;
+        uint256 nftTokenIdToTransfer = nftTokenIds[nftIndex];
+
+        // Transfer the NFT to the winner
+        nftReward.transferFrom(address(this), recentWinner, nftTokenIdToTransfer);
+
         emit WinnerPicked(recentWinner);
     }
 

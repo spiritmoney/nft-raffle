@@ -2,6 +2,8 @@
 import {DeployFunction} from "hardhat-deploy/types"
 import {HardhatRuntimeEnvironment} from "hardhat/types"
 
+import { ethers } from "hardhat";
+
 import {
     networkConfig,
     developmentChains,
@@ -19,7 +21,7 @@ const deployRaffle: DeployFunction = async function (
     const { deployer } = await getNamedAccounts()
     const chainId = network.config.chainId
     // const chainId = 31337
-    let vrfCoordinatorV2Address: string | undefined, subscriptionId: string | undefined
+    let vrfCoordinatorV2Address: string | undefined, subscriptionId: string | undefined, nftRewardAddress: string | undefined
 
     if (chainId == 31337) {
         // create VRFV2 Subscription
@@ -34,6 +36,7 @@ const deployRaffle: DeployFunction = async function (
     } else {
         vrfCoordinatorV2Address = networkConfig[network.config.chainId!]["vrfCoordinatorV2"]
         subscriptionId = networkConfig[network.config.chainId!]["subscriptionId"]
+        nftRewardAddress = networkConfig[network.config.chainId!]["nftRewardAddress"]
     }
     const waitBlockConfirmations = developmentChains.includes(network.name)
         ? 1
@@ -47,6 +50,7 @@ const deployRaffle: DeployFunction = async function (
         networkConfig[network.config.chainId!]["keepersUpdateInterval"],
         networkConfig[network.config.chainId!]["raffleEntranceFee"],
         networkConfig[network.config.chainId!]["callbackGasLimit"],
+        nftRewardAddress,
     ]
     const raffle = await deploy("Raffle", {
         from: deployer,
@@ -68,3 +72,34 @@ const deployRaffle: DeployFunction = async function (
 }
 export default deployRaffle
 deployRaffle.tags = ["all", "raffle"]
+
+
+// interface Deployments {
+//     deploy: Function // Replace Function with a more specific type if possible
+// }
+
+// interface NamedAccounts {
+//     deployer: string
+// }
+
+// const ENTRANCE_FEE = ethers.utils.parseEther("0.01")
+
+// module.exports = async ({ getNamedAccounts, deployments }: {getNamedAccounts: () => Promise<NamedAccounts>, deployments: Deployments }) => {
+//     const { deploy } = deployments;
+//     const { deployer } = await getNamedAccounts();
+
+//     await deploy("Raffle", {
+//         from: deployer,
+//         args: [
+//             "0x9DdfaCa8183c41ad55329BdeeD9F6A8d53168B1B",
+//             "69093496915893036751649966106646175515611241822984067150785576259265085359454",
+//             "0x787d74caea10b2b357790d5b5247c2f63d1d91572a9846f780606e4d953677ae",
+//             "300",
+//             ENTRANCE_FEE,
+//             "500000",
+//             "0x2C13c417C73c181F02341BB72aCF625aFc9A4d0c",
+//         ],
+//         log: true,
+//         waitConfirmations: 6,
+//     })
+// }

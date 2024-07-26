@@ -17,7 +17,8 @@ const MAINNET_RPC_URL =
     process.env.ALCHEMY_MAINNET_RPC_URL ||
     "https://eth-mainnet.alchemyapi.io/v2/your-api-key"
 const SEPOLIA_RPC_URL =
-    process.env.SEPOLIA_RPC_URL || "https://eth-sepolia.g.alchemy.com/v2/YOUR-API-KEY"
+    process.env.SEPOLIA_RPC_URL ||
+    "https://eth-sepolia.g.alchemy.com/v2/HL-nBBGPux99Bsa01NliBUSgNMtm85pC"
 const POLYGON_MAINNET_RPC_URL =
     process.env.POLYGON_MAINNET_RPC_URL || "https://polygon-mainnet.alchemyapi.io/v2/your-api-key"
 const PRIVATE_KEY = process.env.PRIVATE_KEY
@@ -70,7 +71,7 @@ const config: HardhatUserConfig = {
     etherscan: {
         // npx hardhat verify --network <NETWORK> <CONTRACT_ADDRESS> <CONSTRUCTOR_PARAMETERS>
         apiKey: {
-            sepolia: ETHERSCAN_API_KEY,
+            // sepolia: ETHERSCAN_API_KEY,
             polygon: POLYGONSCAN_API_KEY,
         },
     },

@@ -30,7 +30,7 @@ import { Raffle, VRFCoordinatorV2Mock } from "../../typechain-types"
           })
 
           describe("constructor", function() {
-            it("intitiallizes the raffle correctly", async () => {
+            it("initializes the raffle correctly", async () => {
                 console.log(network.config.chainId)
                 // Ideally, we'd separate these out so that only 1 assert per "it" block
                 // And ideally, we'd make this check everything
